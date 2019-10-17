@@ -1,7 +1,8 @@
 const serverless = require("serverless-http");
 const bodyParser = require("body-parser");
 const express = require("express");
-const reports = require("./functions/reports");
+const salesReports = require("./functions/salesReports");
+const officeActivity = require("./functions/officeActivity");
 const cors = require('cors');
 
 const app = express();
@@ -13,6 +14,7 @@ app.get("/", (req, res) => {
   res.send("Healthy!");
 });
 
-app.use('/reports', reports);
+app.use('/reports', salesReports);
+app.use('/activity', officeActivity);
 
 module.exports.handler = serverless(app);

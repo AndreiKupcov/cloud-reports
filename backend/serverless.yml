@@ -1,10 +1,12 @@
 service: ${self:custom.service}
 
 custom:
+  profile: perfsys
   service: ${file(./config.json):service}
   stage: ${opt:stage, '${file(./config.json):stage}'}
   region: ${opt:region, '${file(./config.json):region}'}
-  reportsTableName: ${self:service}-${file(./config.json):reportsTableName}-${opt:stage, '${file(./config.json):stage}'}
+  reportsTableName: ${self:service}-${opt:stage, '${file(./config.json):stage}'}-reports
+  officeActivityTableName: ${self:service}-${self:custom.stage}-officeActivity
 
 provider:
   name: aws
@@ -18,12 +20,14 @@ provider:
         - 'dynamodb:*'
       Resource:
         - { "Fn::GetAtt": ["reportsTable", "Arn" ] }
+        - { "Fn::GetAtt": ["officeActivityTable", "Arn" ] }
   environment:
     REPORTS_TABLE_NAME: ${self:custom.reportsTableName}
+    OFFICE_ACTIVITY_TABLE_NAME: ${self:custom.officeActivityTableName}
 
 
 functions:
-  postReport:
+  saveSalesReport:
     handler: index.handler
     events:
       - http:
@@ -31,6 +35,13 @@ functions:
           method: POST
           cors: true
 
+  saveOfficeActivity:
+    handler: index.handler
+    events:
+      - http:
+          path: /activity
+          method: POST
+          cors: true
 #  getReports:
 #    handler: index.handler
 #    events:
@@ -45,6 +56,20 @@ resources:
       Type: AWS::DynamoDB::Table
       Properties:
         TableName: ${self:custom.reportsTableName}
+        AttributeDefinitions:
+          - AttributeName: id
+            AttributeType: S
+        KeySchema:
+          - AttributeName: id
+            KeyType: HASH
+        ProvisionedThroughput:
+          ReadCapacityUnits: 1
+          WriteCapacityUnits: 1
+
+    officeActivityTable:
+      Type: AWS::DynamoDB::Table
+      Properties:
+        TableName: ${self:custom.officeActivityTableName}
         AttributeDefinitions:
           - AttributeName: id
             AttributeType: S
